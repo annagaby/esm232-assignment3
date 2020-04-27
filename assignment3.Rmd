@@ -1,0 +1,113 @@
+---
+title: "assignment3"
+author: "Anna Calle"
+date: "4/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(sensitivity)
+library(pse)
+```
+
+Adjust your almond model to output ONLY the mean almond yield anomoly IF the users sets parameter (e.g mean_only = TRUE))
+
+Perform a sensitivity analysis of how mean anomaly varies ALL of the parameters used in the yield model  
+
+Assume parameters are normally distributed with standard deviation of 20% mean value
+
+Rank the parameters in term of their sensitivity
+
+Graph uncertainty in mean yield anomaly across all parameter uncertainty (boxplot and cummulative distribution of the output).
+
+Repeat using the LHS and Sobel methods
+
+Repeat using twice as many parameter sets as you did in your first sensitivity analysis - and look at how this changes the sensitivity results
+
+Submit R markdown and short write up describing what you learned from the sensitivity analysis. Please submit your markdown as an .html or PDF. 
+
+```{r}
+# read in the input data
+clim <- read.table("clim.txt",  sep=" ", header=T)
+
+# source function
+source("../almond_yield.R")
+
+almond_yield(mean_only = TRUE)
+```
+
+
+LHS
+```{r}
+# names of our parameters
+factors = c("a", "b", "c", "d", "e")
+
+# type of distributions they arise from
+q = c("qnorm", "qnorm", "qnorm", "qnorm", "qnorm")
+
+# parameters mean
+a = -0.015
+b = -0.0046
+c = -0.07
+d = 0.0043
+e = 0.28
+
+# parameters sd
+sd_a = 0.2 * a
+sd_b = 0.2 * b
+sd_c = 0.2 * c
+sd_d = 0.2 * d
+sd_e = 0.2 * e
+
+# parameters for those distributions
+q.arg = list(list(mean=a, sd=0.2),
+             list(mean=b, sd=0.2),
+             list(mean=c, sd=0.2),
+             list(mean=d, sd=0.2),
+             list(mean=e, sd=0.2))
+
+nsets=200
+sens_YA = LHS(NULL,factors,nsets,q,q.arg, nboot=500)
+# save parameter values
+sens.pars = get.data(sens_YA)
+
+head(sens.pars)
+
+ggplot(sens.pars, aes(a))+geom_density()
+ggplot(sens.pars, aes(x=a, y=b))+geom_density_2d()
+
+```
+
+```{r runsen, echo=TRUE, eval=TRUE}
+
+# run the model
+sens_results = almond_yield(clim_data = clim, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e)
+
+sens_res = matrix((unlist(sens_results)), ncol=1, byrow=TRUE)
+
+sens_YA = pse::tell(sens_YA, t(sens_res), res.names="YA")
+plotscatter(sens_YA)
+
+# note it can take standard R plotting parameters
+plotscatter(sens_YA, col="darkgreen", cex=5, ylab="Yield Anomaly (ton/acre)")
+
+# whats is the range of results
+
+plotecdf(sens_YA, col="red", lwd=5, xlab="Yield Anomaly (ton/acre)")
+
+# we can also plot partial correlation coefficients
+plotprcc(sens_YA)
+# and we can look at the actual values
+sens_YA$prcc
+# note because this is a linear model correlations are high for both parameters - and similar
+
+```
+
+
+
+
+
+
