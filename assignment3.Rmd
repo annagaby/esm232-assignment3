@@ -34,7 +34,7 @@ Submit R markdown and short write up describing what you learned from the sensit
 clim <- read.table("clim.txt",  sep=" ", header=T)
 
 # source function
-source("../almond_yield.R")
+source("almond_yield.R")
 
 almond_yield(mean_only = TRUE)
 ```
@@ -84,11 +84,9 @@ ggplot(sens.pars, aes(x=a, y=b))+geom_density_2d()
 ```{r runsen, echo=TRUE, eval=TRUE}
 
 # run the model
-sens_results = almond_yield(clim_data = clim, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e)
+sens_res = almond_yield(clim_data = clim, mean_only = TRUE, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e)
 
-sens_res = matrix((unlist(sens_results)), ncol=1, byrow=TRUE)
-
-sens_YA = pse::tell(sens_YA, t(sens_res), res.names="YA")
+sens_YA = pse::tell(sens_YA, sens_res, res.names="YA")
 plotscatter(sens_YA)
 
 # note it can take standard R plotting parameters
