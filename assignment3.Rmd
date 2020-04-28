@@ -105,7 +105,7 @@ sens_YA_df <- sens_YA$data %>%
 
 lhs_boxplot <- ggplot(sens_YA_df, aes(param, YA, fill=param)) +
   geom_boxplot() + 
-  labs(y="Yield Anomaly (ton/acre)", "Parameter")
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter")
 
 lhs_boxplot
 
@@ -181,11 +181,11 @@ both = cbind.data.frame(sens_YA_sobel$X, gs=sens_YA_sobel$y)
 sens_YA_sobel_df <- sens_YA_sobel$X %>%
   gather(param, YA)
 
-sobel_boxplot <- ggplot(sens_YA_sobel_df, aes(param, YA, fill=param)) +
+sobol_boxplot <- ggplot(sens_YA_sobel_df, aes(param, YA, fill=param)) +
   geom_boxplot() + 
-  labs(y="Yield Anomaly (ton/acre)", "Parameter")
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter")
 
-sobel_boxplot
+sobol_boxplot
  
  
  
