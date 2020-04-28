@@ -64,19 +64,14 @@ q.arg = list(list(mean=a, sd=0.2),
 
 nsets=200
 sens_YA = LHS(NULL,factors,nsets,q,q.arg)
+
 # save parameter values
 sens.pars = get.data(sens_YA)
-
 head(sens.pars)
-
-ggplot(sens.pars, aes(a))+geom_density()
-ggplot(sens.pars, aes(x=a, y=b))+geom_density_2d()
-
 ```
 
 ```{r}
 # run model
-# notice that MoreArgs is used for inputs that are the same for each set
 sens_results= mapply(FUN=almond_yield, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e, MoreArgs=list(clim_data = clim, mean_only=TRUE))
 head(sens_results)
 
@@ -90,14 +85,18 @@ plotscatter(sens_YA)
 plotscatter(sens_YA, col="darkgreen", cex=5, ylab="Yield Anomaly (ton/acre)")
 
 # whats is the range of results
-
 plotecdf(sens_YA, col="red", lwd=5, xlab="Yield Anomaly (ton/acre)")
 
 # we can also plot partial correlation coefficients
 plotprcc(sens_YA)
-# and we can look at the actual values
-sens_YA$prcc
-# note because this is a linear model correlations are high for both parameters - and similar
+
+# rank parameters
+sens_YA_prcc <- sens_YA$prcc[[1]]$PRCC %>%
+  mutate(param = c("a", "b", "c", "d", "e")) %>% 
+  arrange(-(abs(original)))
+
+colnames(sens_YA_prcc) <-  c("PRCC", "Parameter")
+sens_YA_prcc
 
 # boxplot
 sens_YA_df <- sens_YA$data %>%
@@ -159,15 +158,11 @@ sens_YA_sobel$T
 
 # The difference between the main effect and total effect can tell us something about how the parameter influences results
 # so in the main effect we include interactions with other parameters
-
-
 print(sens_YA_sobel)
 plot(sens_YA_sobel)
 
 # compare with LHS and PRCC
 sens_YA$prcc
-
-
 sens_YA_sobel$S
 sens_YA_sobel$T
 
@@ -176,6 +171,24 @@ both = cbind.data.frame(sens_YA_sobel$X, gs=sens_YA_sobel$y)
 
 # look at response of conductance to the two most important variables
  ggplot(both, aes(d, e))+geom_point()+labs(y="Coefficient d", x="Coefficient e")
+ 
+ # rank S
+ rank_S <- sens_YA_sobel$S %>%
+   select(original) %>% 
+   mutate(param = c("a", "b", "c", "d", "e")) %>% 
+  arrange(-(abs(original)))
+
+colnames(rank_S) <-  c("PRCC", "Parameter")
+rank_S
+
+ # rank T
+ rank_T <- sens_YA_sobel$T %>%
+   select(original) %>% 
+   mutate(param = c("a", "b", "c", "d", "e")) %>% 
+  arrange(-(abs(original)))
+
+colnames(rank_T) <-  c("PRCC", "Parameter")
+rank_T
  
  # boxplot
 sens_YA_sobel_df <- sens_YA_sobel$X %>%
@@ -186,10 +199,7 @@ sobol_boxplot <- ggplot(sens_YA_sobel_df, aes(param, YA, fill=param)) +
   labs(y="Yield Anomaly (ton/acre)", x = "Parameter")
 
 sobol_boxplot
- 
- 
- 
- 
+
 ```
 
 
