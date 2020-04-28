@@ -74,7 +74,7 @@ ggplot(sens.pars, aes(x=a, y=b))+geom_density_2d()
 
 ```
 
-```{r runsen, echo=TRUE, eval=TRUE}
+```{r}
 # run model
 # notice that MoreArgs is used for inputs that are the same for each set
 sens_results= mapply(FUN=almond_yield, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e, MoreArgs=list(clim_data = clim, mean_only=TRUE))
@@ -98,6 +98,16 @@ plotprcc(sens_YA)
 # and we can look at the actual values
 sens_YA$prcc
 # note because this is a linear model correlations are high for both parameters - and similar
+
+# boxplot
+sens_YA_df <- sens_YA$data %>%
+  gather(param, YA)
+
+lhs_boxplot <- ggplot(sens_YA_df, aes(param, YA, fill=param)) +
+  geom_boxplot() + 
+  labs(y="Yield Anomaly (ton/acre)", "Parameter")
+
+lhs_boxplot
 
 ```
 
