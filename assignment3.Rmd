@@ -55,13 +55,6 @@ c = -0.07
 d = 0.0043
 e = 0.28
 
-# parameters sd
-sd_a = 0.2 * a
-sd_b = 0.2 * b
-sd_c = 0.2 * c
-sd_d = 0.2 * d
-sd_e = 0.2 * e
-
 # parameters for those distributions
 q.arg = list(list(mean=a, sd=0.2),
              list(mean=b, sd=0.2),
@@ -70,7 +63,7 @@ q.arg = list(list(mean=a, sd=0.2),
              list(mean=e, sd=0.2))
 
 nsets=200
-sens_YA = LHS(NULL,factors,nsets,q,q.arg, nboot=500)
+sens_YA = LHS(NULL,factors,nsets,q,q.arg)
 # save parameter values
 sens.pars = get.data(sens_YA)
 
@@ -82,9 +75,12 @@ ggplot(sens.pars, aes(x=a, y=b))+geom_density_2d()
 ```
 
 ```{r runsen, echo=TRUE, eval=TRUE}
-# run the model
-sens_results = almond_yield(clim_data = clim, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e)
+# run model
+# notice that MoreArgs is used for inputs that are the same for each set
+sens_results= mapply(FUN=almond_yield, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e, MoreArgs=list(clim_data = clim, mean_only=TRUE))
+head(sens_results)
 
+# use unlist to get a matrix
 sens_res = matrix((unlist(sens_results)), ncol=1, byrow=TRUE)
 
 sens_YA = pse::tell(sens_YA, t(sens_res), res.names="YA")
@@ -105,7 +101,72 @@ sens_YA$prcc
 
 ```
 
+Sobel
 
+```{r}
+# names of our parameters
+# number of parameters 
+
+np=200
+a = rnorm(mean=a, sd=0.2, n=np)
+b = rnorm(mean=b, sd=0.2, n=np)
+c = rnorm(mean=c, sd=0.2, n=np)
+d = rnorm(mean=d, sd=0.2, n=np)
+e = rnorm(mean=e, sd=0.2, n=np)
+
+# generate two examples of random number from parmeter distributions
+
+X1 = cbind.data.frame(a, b, c, d, e)
+
+# repeat sampling
+a = rnorm(mean=a, sd=0.2, n=np)
+b = rnorm(mean=b, sd=0.2, n=np)
+c = rnorm(mean=c, sd=0.2, n=np)
+d = rnorm(mean=d, sd=0.2, n=np)
+e = rnorm(mean=e, sd=0.2, n=np)
+
+X2 = cbind.data.frame(a, b, c, d, e)
+
+sens_YA_sobel = sobol2007(model = NULL, X1, X2, nboot = 100)
+
+
+# run model for all parameter sets
+res = mapply(FUN=almond_yield,  a=sens_YA_sobel$X$a,
+             b=sens_YA_sobel$X$b,
+             c=sens_YA_sobel$X$c,
+             d=sens_YA_sobel$X$d,
+             e=sens_YA_sobel$X$e,
+             MoreArgs=list(clim_data = clim, mean_only=TRUE))
+
+
+sens_YA_sobel = sensitivity::tell(sens_YA_sobel,res, res.names="YA")
+
+# first-order indices (main effect without co-variance)
+sens_YA_sobel$S
+
+# total sensitivity index -note that this partitions the output variance - so values sum to 1
+sens_YA_sobel$T
+
+# The difference between the main effect and total effect can tell us something about how the parameter influences results
+# so in the main effect we include interactions with other parameters
+
+
+print(sens_YA_sobel)
+plot(sens_YA_sobel)
+
+# compare with LHS and PRCC
+sens_YA$prcc
+
+
+sens_YA_sobel$S
+sens_YA_sobel$T
+
+# make a data frame for plotting
+both = cbind.data.frame(sens_YA_sobel$X, gs=sens_YA_sobel$y)
+
+# look at response of conductance to the two most important variables
+ ggplot(both, aes(d, e))+geom_point()+labs(y="Coefficient d", x="Coefficient e")
+```
 
 
 
