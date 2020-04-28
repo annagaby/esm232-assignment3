@@ -18,7 +18,7 @@ almond_yield <- function( clim_data = clim,
                           c=-0.07,
                           d=0.0043,
                           e=0.28,
-                          mean_only = FALSE) {
+                          mean_only = TRUE) {
   
   # Add in some error checking into the function
   
@@ -83,5 +83,3 @@ almond_yield <- function( clim_data = clim,
   # Return list
   ifelse(mean_only == TRUE, return (mean_anom), return(yield_list))
 }
-
-almond_yield()
