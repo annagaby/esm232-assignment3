@@ -13,7 +13,7 @@ library(sensitivity)
 library(pse)
 ```
 
-Adjust your almond model to output ONLY the mean almond yield anomoly IF the users sets parameter (e.g mean_only = TRUE))
+Adjust your almond model to output ONLY the mean almond yield anomaly IF the users sets parameter (e.g mean_only = TRUE))
 
 Perform a sensitivity analysis of how mean anomaly varies ALL of the parameters used in the yield model  
 
@@ -21,7 +21,7 @@ Assume parameters are normally distributed with standard deviation of 20% mean v
 
 Rank the parameters in term of their sensitivity
 
-Graph uncertainty in mean yield anomaly across all parameter uncertainty (boxplot and cummulative distribution of the output).
+Graph uncertainty in mean yield anomaly across all parameter uncertainty (boxplot and cumulative distribution of the output).
 
 Repeat using the LHS and Sobol methods
 
@@ -192,7 +192,7 @@ rank_S
 colnames(rank_T) <-  c("PRCC", "Parameter")
 rank_T
  
- # boxplot
+ # boxplot, comparing uncertainty of estimates
 sens_YA_sobel_df <- sens_YA_sobel$X %>%
   gather(param, YA) %>% 
   mutate(method = "Sobol")
@@ -211,7 +211,7 @@ Comparing boxplots
 # merging results for both methods 
 sens_both_df <- rbind(sens_YA_df, sens_YA_sobel_df)
 
-# boxplot
+# boxplot, comparing uncertainty of estimates
 both_boxplot <- ggplot(sens_both_df, aes(x=param, y=YA, fill=method)) + 
     geom_boxplot() + 
   labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
@@ -221,7 +221,7 @@ both_boxplot
 ```
 
 
-
+There was no significant difference in model sensitivities between the LHS and Sobel methods. Almond yield was the most sensitive to changes in variable D (Precipcoeff2). The partial rank regression coefficients (PRCC) were highest for parameter D, and lowest for parameter E. This effect was nearly identical between the LHS and Sobol methods. Parameter D is the squared value of the amount of January precipitation in the current harvest year. It makes sense that almond yield would be the most sensitive to this parameter because winter rainfall can have a significant impact on plant productivity in the current year. Prior year precipitation will impact individual plant growth from the prior season so may give a plant more branches on which to grow fruit. However, current season precipitation dictates how much energy that plant can dedicate to fruit production right now. Minimum temperatures can have significant impacts on plant productivity if there is a hard freeze, but most these event are not common and most farmers have management strategies to mitigate sub-optimal temperatures.
 
 
 
