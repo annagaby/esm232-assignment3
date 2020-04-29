@@ -2,7 +2,9 @@
 title: "Assignment 3"
 author: "Anna Calle and Jamie Miller"
 date: "4/22/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,22 +15,99 @@ library(sensitivity)
 library(pse)
 ```
 
-Adjust your almond model to output ONLY the mean almond yield anomaly IF the users sets parameter (e.g mean_only = TRUE))
+- Adjust your almond model to output ONLY the mean almond yield anomaly IF the users sets parameter (e.g mean_only = TRUE))
 
-Perform a sensitivity analysis of how mean anomaly varies ALL of the parameters used in the yield model  
+- Perform a sensitivity analysis of how mean anomaly varies ALL of the parameters used in the yield model  
 
-Assume parameters are normally distributed with standard deviation of 20% mean value
+- Assume parameters are normally distributed with standard deviation of 20% mean value
 
-Rank the parameters in term of their sensitivity
+- Rank the parameters in term of their sensitivity
 
-Graph uncertainty in mean yield anomaly across all parameter uncertainty (boxplot and cumulative distribution of the output).
+- Graph uncertainty in mean yield anomaly across all parameter uncertainty (boxplot and cumulative distribution of the output).
 
-Repeat using the LHS and Sobol methods
+- Repeat using the LHS and Sobol methods
 
-Repeat using twice as many parameter sets as you did in your first sensitivity analysis - and look at how this changes the sensitivity results
+- Repeat using twice as many parameter sets as you did in your first sensitivity analysis - and look at how this changes the sensitivity results
 
-Submit R markdown and short write up describing what you learned from the sensitivity analysis. Please submit your markdown as an .html or PDF. 
+- Submit R markdown and short write up describing what you learned from the sensitivity analysis. Please submit your markdown as an .html or PDF. 
 
+```{r}
+# Adjusted almond yield function
+almond_yield <- function( clim_data = clim,
+                          a=-0.015,
+                          b=-0.0046,
+                          c=-0.07,
+                          d=0.0043,
+                          e=0.28,
+                          mean_only = TRUE) {
+  
+  # Add in some error checking into the function
+  
+  # Make sure the climate data input is a dataframe
+  if(class(clim_data) != "data.frame") return("Climate data input must be a data frame")
+  
+  # Make sure the climate data input contains the columns year, month, precip, tmin_c and tmax_c
+  if(!all(has_name(clim_data, c("month", "year",  "month", "precip", "tmin_c", "tmax_c")))) return("Climate data input must contain the following columns: year, month, precip, tmin_c and tmax_c")
+  
+  # Make sure that the input for precipitation is larger than 0
+  clim_data$precip = ifelse(clim_data$precip < 0, return("Input for precipitation must be a value larger than 0"), clim_data$precip)
+  
+  # Make sure that the maximum tempertaure will be larger than the minimum temperature
+  clim_data$tmin_c = ifelse(clim_data$tmin_c > clim_data$tmax_c, return("Input for maximum temperature must be larger than input for minimum temperature"), clim_data$tmin_c)
+  
+  # Average monthly maximum daily temperature, and monthly precipitation from a data frame called clim  with columns year, month, precip and tmax_c
+  
+  clim_month <-  clim_data %>%
+    group_by(month, year) %>%
+    dplyr::summarise(meantmin = mean(tmin_c),
+              meantmax = mean(tmax_c),
+              precip=sum(precip))
+  
+  # Filter Jan and Feb data
+  jan <- clim_month %>% 
+    filter(month==1)
+  
+  feb <- clim_month %>% 
+    filter(month==2)
+  
+  # Change column names
+  colnames(jan) <- c("month", "year", "Tn", "Tm", "P")
+  colnames(feb) <- c("month", "year", "Tn", "Tm", "P")
+  
+  # Data structure for yield annomalies
+  yield_df <- data.frame(year = jan$year, YA = NA)
+  
+  # Loop through each year
+  for (i in 1:length(yield_df$year)) {
+    yield_df$YA[i] = a*feb$Tn[i] + b*(feb$Tn[i]^2) +c*jan$P[i] + d*(jan$P[i]^2) + e
+  }
+  
+  # Calculate max and min yields
+  max_yield <- yield_df %>% 
+    arrange(-abs(YA)) %>% 
+    head(1)
+  
+  min_yield <- yield_df %>% 
+    arrange(abs(YA)) %>% 
+    head(1)
+  
+  # Change column names of max and min yields
+  colnames(max_yield) <- c("Year", "Maximum Yield Anomaly")
+  colnames(min_yield) <- c("Year", "Minimum Yield Anomaly")
+  
+  # Create list with three elements
+  yield_list <- list(yield_df, max_yield, min_yield)
+  
+  # Mean anomaly
+  mean_anom <- mean(yield_df$YA)
+  
+  # Return list
+  ifelse(mean_only == TRUE, return (mean_anom), return(yield_list))
+}
+```
+
+
+LHS
 ```{r}
 # read in the input data
 clim <- read.table("clim.txt",  sep=" ", header=T)
@@ -36,12 +115,6 @@ clim <- read.table("clim.txt",  sep=" ", header=T)
 # source function
 source("almond_yield.R")
 
-almond_yield(mean_only = TRUE)
-```
-
-
-LHS
-```{r}
 # names of our parameters: a = "Tmincoeff1", b = "Tmincoeff2", c = "Precipcoeff1", d = "Precipcoeff2", e = "Intercept"
 factors = c("a", "b", "c", "d", "e")
 
@@ -67,13 +140,9 @@ sens_YA = LHS(NULL,factors,nsets,q,q.arg)
 
 # save parameter values
 sens.pars = get.data(sens_YA)
-head(sens.pars)
-```
 
-```{r}
 # run model
 sens_results= mapply(FUN=almond_yield, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e, MoreArgs=list(clim_data = clim, mean_only=TRUE))
-head(sens_results)
 
 # use unlist to get a matrix
 sens_res = matrix((unlist(sens_results)), ncol=1, byrow=TRUE)
@@ -81,13 +150,13 @@ sens_res = matrix((unlist(sens_results)), ncol=1, byrow=TRUE)
 sens_YA = pse::tell(sens_YA, t(sens_res), res.names="YA")
 plotscatter(sens_YA)
 
-# note it can take standard R plotting parameters
+# plot parameters
 plotscatter(sens_YA, col="darkgreen", cex=5, ylab="Yield Anomaly (ton/acre)")
 
-# whats is the range of results
+# range of results
 plotecdf(sens_YA, col="red", lwd=5, xlab="Yield Anomaly (ton/acre)")
 
-# we can also plot partial correlation coefficients
+# partial correlation coefficients
 plotprcc(sens_YA)
 
 # rank parameters
@@ -109,13 +178,11 @@ lhs_boxplot <- ggplot(sens_YA_df, aes(param, YA, fill=param)) +
   theme_classic()
 
 lhs_boxplot
-
 ```
 
 Sobol
 
 ```{r}
-# names of our parameters
 # number of parameters 
 
 np=200
@@ -126,7 +193,6 @@ d = rnorm(mean=d, sd=0.2, n=np)
 e = rnorm(mean=e, sd=0.2, n=np)
 
 # generate two examples of random number from parmeter distributions
-
 X1 = cbind.data.frame(a, b, c, d, e)
 
 # repeat sampling
@@ -155,13 +221,8 @@ sens_YA_sobel = sensitivity::tell(sens_YA_sobel,res, res.names="YA")
 # first-order indices (main effect without co-variance)
 sens_YA_sobel$S
 
-# total sensitivity index -note that this partitions the output variance - so values sum to 1
+# total sensitivity index
 sens_YA_sobel$T
-
-# The difference between the main effect and total effect can tell us something about how the parameter influences results
-# so in the main effect we include interactions with other parameters
-print(sens_YA_sobel)
-plot(sens_YA_sobel)
 
 # compare with LHS and PRCC
 sens_YA$prcc
@@ -203,7 +264,6 @@ sobol_boxplot <- ggplot(sens_YA_sobel_df, aes(param, YA, fill=param)) +
   theme_classic()
 
 sobol_boxplot
-
 ```
 
 Comparing boxplots
@@ -215,13 +275,190 @@ sens_both_df <- rbind(sens_YA_df, sens_YA_sobel_df)
 both_boxplot <- ggplot(sens_both_df, aes(x=param, y=YA, fill=method)) + 
     geom_boxplot() + 
   labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  ylim(-1, 1.1) +
   theme_classic()
 
 both_boxplot
 ```
 
 
-There was no significant difference in model sensitivities between the LHS and Sobel methods. Almond yield was the most sensitive to changes in variable D (Precipcoeff2). The partial rank regression coefficients (PRCC) were highest for parameter D, and lowest for parameter E. This effect was nearly identical between the LHS and Sobol methods. Parameter D is the squared value of the amount of January precipitation in the current harvest year. It makes sense that almond yield would be the most sensitive to this parameter because winter rainfall can have a significant impact on plant productivity in the current year. Prior year precipitation will impact individual plant growth from the prior season so may give a plant more branches on which to grow fruit. However, current season precipitation dictates how much energy that plant can dedicate to fruit production right now. Minimum temperatures can have significant impacts on plant productivity if there is a hard freeze, but most these event are not common and most farmers have management strategies to mitigate sub-optimal temperatures.
+Double number of parameters LHS
+```{r}
+# read in the input data
+clim <- read.table("clim.txt",  sep=" ", header=T)
+
+# source function
+source("almond_yield.R")
+
+# names of our parameters: a = "Tmincoeff1", b = "Tmincoeff2", c = "Precipcoeff1", d = "Precipcoeff2", e = "Intercept"
+factors = c("a", "b", "c", "d", "e")
+
+# type of distributions they arise from
+q = c("qnorm", "qnorm", "qnorm", "qnorm", "qnorm")
+
+# parameters mean
+a = -0.015
+b = -0.0046
+c = -0.07
+d = 0.0043
+e = 0.28
+
+# parameters for those distributions
+q.arg = list(list(mean=a, sd=0.2),
+             list(mean=b, sd=0.2),
+             list(mean=c, sd=0.2),
+             list(mean=d, sd=0.2),
+             list(mean=e, sd=0.2))
+
+nsets=400
+sens_YA = LHS(NULL,factors,nsets,q,q.arg)
+
+# save parameter values
+sens.pars = get.data(sens_YA)
+
+# run model
+sens_results= mapply(FUN=almond_yield, a=sens.pars$a, b=sens.pars$b, c=sens.pars$c, d=sens.pars$d, e=sens.pars$e, MoreArgs=list(clim_data = clim, mean_only=TRUE))
+head(sens_results)
+
+# use unlist to get a matrix
+sens_res = matrix((unlist(sens_results)), ncol=1, byrow=TRUE)
+
+sens_YA = pse::tell(sens_YA, t(sens_res), res.names="YA")
+plotscatter(sens_YA)
+
+# plot parameters
+plotscatter(sens_YA, col="darkgreen", cex=5, ylab="Yield Anomaly (ton/acre)")
+
+# range of results
+plotecdf(sens_YA, col="red", lwd=5, xlab="Yield Anomaly (ton/acre)")
+
+# partial correlation coefficients
+plotprcc(sens_YA)
+
+# rank parameters
+sens_YA_prcc <- sens_YA$prcc[[1]]$PRCC %>%
+  mutate(param = c("a", "b", "c", "d", "e")) %>% 
+  arrange(-(abs(original)))
+
+colnames(sens_YA_prcc) <-  c("PRCC", "Parameter")
+sens_YA_prcc
+
+# boxplot
+sens_YA_df <- sens_YA$data %>%
+  gather(param, YA) %>% 
+  mutate(method = "LHS")
+
+lhs_boxplot <- ggplot(sens_YA_df, aes(param, YA, fill=param)) +
+  geom_boxplot() + 
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  theme_classic()
+
+lhs_boxplot
+```
+
+Double number of parameters Sobol
+```{r}
+# number of parameters 
+
+np=400
+a = rnorm(mean=a, sd=0.2, n=np)
+b = rnorm(mean=b, sd=0.2, n=np)
+c = rnorm(mean=c, sd=0.2, n=np)
+d = rnorm(mean=d, sd=0.2, n=np)
+e = rnorm(mean=e, sd=0.2, n=np)
+
+# generate two examples of random number from parmeter distributions
+X1 = cbind.data.frame(a, b, c, d, e)
+
+# repeat sampling
+a = rnorm(mean=a, sd=0.2, n=np)
+b = rnorm(mean=b, sd=0.2, n=np)
+c = rnorm(mean=c, sd=0.2, n=np)
+d = rnorm(mean=d, sd=0.2, n=np)
+e = rnorm(mean=e, sd=0.2, n=np)
+
+X2 = cbind.data.frame(a, b, c, d, e)
+
+sens_YA_sobel = sobol2007(model = NULL, X1, X2, nboot = 100)
+
+
+# run model for all parameter sets
+res = mapply(FUN=almond_yield,  a=sens_YA_sobel$X$a,
+             b=sens_YA_sobel$X$b,
+             c=sens_YA_sobel$X$c,
+             d=sens_YA_sobel$X$d,
+             e=sens_YA_sobel$X$e,
+             MoreArgs=list(clim_data = clim, mean_only=TRUE))
+
+
+sens_YA_sobel = sensitivity::tell(sens_YA_sobel,res, res.names="YA")
+
+# first-order indices (main effect without co-variance)
+sens_YA_sobel$S
+
+# total sensitivity index
+sens_YA_sobel$T
+
+# compare with LHS and PRCC
+sens_YA$prcc
+sens_YA_sobel$S
+sens_YA_sobel$T
+
+# make a data frame for plotting
+both = cbind.data.frame(sens_YA_sobel$X, gs=sens_YA_sobel$y)
+
+# look at response of conductance to the two most important variables
+ ggplot(both, aes(d, e))+geom_point()+labs(y="Coefficient d", x="Coefficient e")
+ 
+ # rank S
+ rank_S <- sens_YA_sobel$S %>%
+   select(original) %>% 
+   mutate(param = c("a", "b", "c", "d", "e")) %>% 
+  arrange(-(abs(original)))
+
+colnames(rank_S) <-  c("PRCC", "Parameter")
+rank_S
+
+ # rank T
+ rank_T <- sens_YA_sobel$T %>%
+   select(original) %>% 
+   mutate(param = c("a", "b", "c", "d", "e")) %>% 
+  arrange(-(abs(original)))
+
+colnames(rank_T) <-  c("PRCC", "Parameter")
+rank_T
+ 
+ # boxplot, comparing uncertainty of estimates
+sens_YA_sobel_df <- sens_YA_sobel$X %>%
+  gather(param, YA) %>% 
+  mutate(method = "Sobol")
+
+sobol_boxplot <- ggplot(sens_YA_sobel_df, aes(param, YA, fill=param)) +
+  geom_boxplot() + 
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  theme_classic()
+
+sobol_boxplot
+```
+
+Comparing boxplots
+```{r}
+# merging results for both methods 
+sens_both_df <- rbind(sens_YA_df, sens_YA_sobel_df)
+
+# boxplot, comparing uncertainty of estimates
+both_boxplot2 <- ggplot(sens_both_df, aes(x=param, y=YA, fill=method)) + 
+    geom_boxplot() + 
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  ylim(-1, 1.1) +
+  theme_classic()
+
+both_boxplot2
+both_boxplot
+```
+
+
+There was no significant difference in model sensitivities between the LHS and Sobol methods. Almond yield was the most sensitive to changes in variable D (Precipcoeff2). The partial rank regression coefficients (PRCC) were highest for parameter D, and lowest for parameter E. This effect was nearly identical between the LHS and Sobol methods. Parameter D is the squared value of the amount of January precipitation in the current harvest year. It makes sense that almond yield would be the most sensitive to this parameter because winter rainfall can have a significant impact on plant productivity in the current year. Prior year precipitation will impact individual plant growth from the prior season so may give a plant more branches on which to grow fruit. However, current season precipitation dictates how much energy that plant can dedicate to fruit production right now. Minimum temperatures can have significant impacts on plant productivity if there is a hard freeze, but most these event are not common and most farmers have management strategies to mitigate sub-optimal temperatures. Doubling the number of parameters used in the sensitivity analysis did not significantly change the uncertainty in mean yield annomaly across the different parameters
 
 
 
