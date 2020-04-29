@@ -1,6 +1,6 @@
 ---
-title: "assignment3"
-author: "Anna Calle"
+title: "Assignment 3"
+author: "Anna Calle and Jamie Miller"
 date: "4/22/2020"
 output: html_document
 ---
@@ -100,11 +100,13 @@ sens_YA_prcc
 
 # boxplot
 sens_YA_df <- sens_YA$data %>%
-  gather(param, YA)
+  gather(param, YA) %>% 
+  mutate(method = "LHS")
 
 lhs_boxplot <- ggplot(sens_YA_df, aes(param, YA, fill=param)) +
   geom_boxplot() + 
-  labs(y="Yield Anomaly (ton/acre)", x = "Parameter")
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  theme_classic()
 
 lhs_boxplot
 
@@ -192,15 +194,33 @@ rank_T
  
  # boxplot
 sens_YA_sobel_df <- sens_YA_sobel$X %>%
-  gather(param, YA)
+  gather(param, YA) %>% 
+  mutate(method = "Sobol")
 
 sobol_boxplot <- ggplot(sens_YA_sobel_df, aes(param, YA, fill=param)) +
   geom_boxplot() + 
-  labs(y="Yield Anomaly (ton/acre)", x = "Parameter")
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  theme_classic()
 
 sobol_boxplot
 
 ```
+
+Comparing boxplots
+```{r}
+# merging results for both methods 
+sens_both_df <- rbind(sens_YA_df, sens_YA_sobel_df)
+
+# boxplot
+both_boxplot <- ggplot(sens_both_df, aes(x=param, y=YA, fill=method)) + 
+    geom_boxplot() + 
+  labs(y="Yield Anomaly (ton/acre)", x = "Parameter") +
+  theme_classic()
+
+both_boxplot
+```
+
+
 
 
 
