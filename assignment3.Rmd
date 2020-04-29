@@ -181,7 +181,6 @@ lhs_boxplot
 ```
 
 Sobol
-
 ```{r}
 # number of parameters 
 
@@ -457,8 +456,7 @@ both_boxplot2
 both_boxplot
 ```
 
+There was no significant difference in model sensitivities between the LHS and Sobel methods. Almond yield was the most sensitive to changes in variable D (Precipcoeff2). The partial rank regression coefficients (PRCC) were highest for parameter D, and lowest for parameter E. This effect was nearly identical between the LHS and Sobol methods. Parameter D is the squared value of the amount of January precipitation in the current harvest year. It makes sense that almond yield would be the most sensitive to this parameter because winter rainfall can have a significant impact on plant productivity in the current year. Prior year precipitation will impact individual plant growth from the prior season so may give a plant more branches on which to grow fruit. However, current season precipitation dictates how much energy that plant can dedicate to fruit production right now. Minimum temperatures can have significant impacts on plant productivity if there is a hard freeze, but most these event are not common and most farmers have management strategies to mitigate sub-optimal temperatures.
 
-There was no significant difference in model sensitivities between the LHS and Sobol methods. Almond yield was the most sensitive to changes in variable D (Precipcoeff2). The partial rank regression coefficients (PRCC) were highest for parameter D, and lowest for parameter E. This effect was nearly identical between the LHS and Sobol methods. Parameter D is the squared value of the amount of January precipitation in the current harvest year. It makes sense that almond yield would be the most sensitive to this parameter because winter rainfall can have a significant impact on plant productivity in the current year. Prior year precipitation will impact individual plant growth from the prior season so may give a plant more branches on which to grow fruit. However, current season precipitation dictates how much energy that plant can dedicate to fruit production right now. Minimum temperatures can have significant impacts on plant productivity if there is a hard freeze, but most these event are not common and most farmers have management strategies to mitigate sub-optimal temperatures. Doubling the number of parameters used in the sensitivity analysis did not significantly change the uncertainty in mean yield annomaly across the different parameters
-
-
+Doubling the parameter sets reduced the uncertainty in the estimates, but did not appear to change the estimated sensitivities themselves.
 
