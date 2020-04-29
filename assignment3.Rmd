@@ -42,7 +42,7 @@ almond_yield(mean_only = TRUE)
 
 LHS
 ```{r}
-# names of our parameters
+# names of our parameters: a = "Tmincoeff1", b = "Tmincoeff2", c = "Precipcoeff1", d = "Precipcoeff2", e = "Intercept"
 factors = c("a", "b", "c", "d", "e")
 
 # type of distributions they arise from
